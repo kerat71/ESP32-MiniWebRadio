@@ -1,6 +1,6 @@
 # ESP32-MiniWebRadio V2
 
-![Display](https://github.com/schreibfaul1/ESP32-MiniWebRadio/blob/run-Arduino-as--a-component/additional_info/MiniWebRadio.jpg)
+![Display](https://github.com/schreibfaul1/ESP32-MiniWebRadio/blob/master/additional_info/MiniWebRadio.jpg)
 
 Features:
 <ul>
@@ -17,7 +17,7 @@ Features:
 Required HW:
 <ul>
 <li>Decoder module VS1053 or external DAC (e.g. PCM5102a)</li>
-<li>TFT Display with Tochpad (SPI), Controller can be ILI9341 (320x240px), HX8347D (320x240px), ILI9486 (480x320px) or ILI9488 (480x320px)</li>
+<li>TFT Display with Tochpad (SPI), Controller can be ILI9341 (320x240px), HX8347D (320x240px), ILI9486 (480x320px), ILI9488 (480x320px) or ST7796 (480x320px)</li>
 <li>ESP32 Board (PSRAM not necessary)</li>
 <li>SD Card + adapter</li>
 </ul><br>
@@ -47,5 +47,16 @@ New in V2:
 <br>
 <br>
  
+Codec\Decoder| VS1053B        | PCM5102A, AC101, ES8388, WM8978 |
+|----------|----------|----------|
+| mp3 | y| y |
+| aac | y | y |
+| aacp (HLS) | y  | mono |
+| wav | y | y  |
+| flac | with plugin | blocksize max 8192 bytes |
+| vorbis | y  | y (<=196Kbit/s)  |
+| m4a | y  | y |
+| opus | n  | y (celt)  |
+
 
 

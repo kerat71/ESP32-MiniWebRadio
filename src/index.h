@@ -2,7 +2,7 @@
  *  index.h
  *
  *  Created on: 04.10.2018
- *  Updated on: 24.03.2023
+ *  Updated on: 17.06.2023
  *      Author: Wolle
  *
  *  successfully tested with Chrome and Firefox
@@ -71,7 +71,7 @@ const char index_html[] PROGMEM = R"=====(
             display: none;
         }
         #content {
-            min-height : 540px;
+            min-height : 550px;
             min-width : 725px;
             overflow : hidden;
             background-color : lightskyblue;
@@ -313,6 +313,7 @@ function connect() {
 
     switch(msg) {
       case "pong":            clearTimeout(tm)
+                              console.log("pong")
                               toastr.clear()
                               break
       case "mute":            if(val == '1'){ document.getElementById('Mute').src = 'SD/png/Button_Mute_Red.png'
@@ -326,8 +327,8 @@ function connect() {
                               break
       case "stationURL":      station.value = val
                               break
-      case "stationName":     if(tft_size == 0) showLabel('label-logo-s', val)
-                              if(tft_size == 1) showLabel('label-logo-m', val)
+      case "stationLogo":     if(tft_size == 0) showLogo('label-logo-s', val)
+                              if(tft_size == 1) showLogo('label-logo-m', val)
                               break
       case "streamtitle":     cmd.value = val
                               break
@@ -642,48 +643,18 @@ function select_l3 (presctrl) { // preset, select level 2
 
 // ----------------------------------- TAB RADIO ------------------------------------
 
-function showLabel (id, src) { // get the bitmap from SD, convert to URL first
+function showLogo(id, src) { // get the bitmap from SD, convert to URL first
   src = src.replace(/%/g, '%25') // % must be the first
   src = src.replace(/\s/g, '%20') // URLs never can have blanks
-  // src=src.replace(/!/g  , '%21')  // not necessary to replace
-  // src=src.replace(/\'/g , '%22')  // not allowed in Windows filenames
-  // src=src.replace(/#/g  , '%23')  // can not be used, is separator in list
-  // src=src.replace(/\$/g , '%24')  // not necessary to replace
-  // src=src.replace(/&/g  , '%26')  // not necessary to replace
   src = src.replace(/'/g, '%27') // must be replace
   src = src.replace(/\(/g, '%28') // must be replace
   src = src.replace(/\)/g, '%29') // must be replace
-  // src=src.replace(/\*/g , '%2A')  // not allowed in Windows filenames
   src = src.replace(/\+/g, '%2B') // is necessary to replace, + is the same as space
-  // src=src.replace(/,/g  , '%2C')  // commas are later replaced in dots
-  // src=src.replace(/\-/g , '%2D')  // not necessary to replace
-  // src=src.replace(/\./g , '%2E')  // not necessary to replace
-  // src=src.replace('/'   , '%2F')  // is separator, not usable
-  // src=src.replace(/:/g  , '%3A')  // not allowed in Windows filenames
-  // src=src.replace(/;/g  , '%3B')  // not necessary to replace
-  // src=src.replace(/</g  , '%3C')  // not allowed in Windows filenames
-  // src=src.replace(/\=/g , '%3D')  // can't be used in selectboxes
-  // src=src.replace(/>/g  , '%3E')  // not allowed in Windows filenames
-  // src=src.replace(/\?/g , '%3F')  // not allowed in Windows filenames
-  // src=src.replace(/@/g  , '%40')  // not necessary to replace
-  // src=src.replace(/\[/g , '%5B')  // not necessary to replace
-  // src=src.replace('\'   , '%5C')  // not necessary to replace
-  // src=src.replace(/\]/g , '%5D')  // not necessary to replace
-  // src=src.replace(/\{/g , '%7B')  // not necessary to replace
-  // src=src.replace(/\|/g , '%7C')  // not allowed in filenames
-  // src=src.replace(/\}/g , '%7D')  // not necessary to replace
-
   var timestamp = new Date().getTime()
   var file
-  if(src == '' || src === 'unknown'){
-    file = 'url(SD/unknown.jpg?t=' + timestamp + ')'
-    document.getElementById(id).style.backgroundImage = file
-    return
-  }
-  var idx = src.indexOf('|')
-  if(idx > 0) src = src.substring(idx+1); // all after pipe
-  file = 'url(SD/logo/' + src + '.jpg?t=' + timestamp + ')'
-  console.log("showLabel id=", id, "file=", file)
+  if(src == '') file = 'url(SD/unknown.jpg?t=' + timestamp + ')'
+  else file = 'url(SD' + src + '?t=' + timestamp + ')'
+  console.log("showLogo id=", id, "file=", file)
   document.getElementById(id).style.backgroundImage = file
 }
 
@@ -752,6 +723,12 @@ function handletone (tonectrl) { // Radio: treble, bass, freq
 
 function setstation () { // Radio: button play - Enter a streamURL here....
   var theUrl = '/stationURL?' + station.value + '&version=' + Math.random()
+  theUrl = theUrl.replace(/%3d/g, '=') // %3d convert to =
+  theUrl = theUrl.replace(/%21/g, '!') //
+  theUrl = theUrl.replace(/%22/g, '"') //
+  theUrl = theUrl.replace(/%23/g, '#') //
+  theUrl = theUrl.replace(/%3f/g, '?') //
+  theUrl = theUrl.replace(/%40/g, '@') //
   var sel = document.getElementById('preset')
   sel.selectedIndex = 0
   cmd.value = ''
@@ -937,14 +914,14 @@ function saveGridFileToSD () { // save to SD
   select = document.getElementById('preset') // Radio: show stationlist
   select.options.length = 1
   var j = 1
-  txt = 'X\tCy\tStationName\tStreamURL\n'
+  txt = 'Hide\tCy\tStationName\tStreamURL\n'
   for (var i = 0; i < wsData.length; i++) {
     c = ''
-    if (objJSON[i].X) {
-      c = objJSON[i].X
+    if (objJSON[i].Hide) {
+      c = objJSON[i].Hide
       txt += c+ '\t'
     } else txt += '\t'
-    if (objJSON[i].X !== '*') {
+    if (objJSON[i].Hide !== '*') {
       if (j < 1000) {
         opt = document.createElement('OPTION')
         opt.text = (('000' + j).slice(-3) + ' - ' + objJSON[i].StationName)
@@ -1010,7 +987,7 @@ function saveExcel () { // save xlsx to PC
   wb.SheetNames.push('Stations')
   var wsData = $('#jsGrid').jsGrid('option', 'data')
   var wscols = [{
-    wch: 3
+    wch: 4
   }, // 'characters'
   {
     wch: 5
@@ -1023,7 +1000,7 @@ function saveExcel () { // save xlsx to PC
   }  // 'characters'
   ]
   var ws = XLSX.utils.json_to_sheet(wsData, {
-    header: ['X', 'Cy', 'StationName', 'StreamURL']
+    header: ['Hide', 'Cy', 'StationName', 'StreamURL']
   })
   ws['!cols'] = wscols
   wb.Sheets.Stations = ws
@@ -1050,7 +1027,7 @@ function saveExcel () { // save xlsx to PC
 
 var clients = [ // testdata
   {
-    X: '*',
+    Hide: '*',
     Cy: 'D',
     StationName: 'Station',
     StreamURL: 'URL'
@@ -1083,7 +1060,7 @@ function showExcelGrid () {
     },
     data: clients,
     fields: [{
-      name: 'X',
+      name: 'Hide',
       type: 'text',
       width: 20,
       align: 'center'
@@ -1124,7 +1101,8 @@ function showExcelGrid () {
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 var showDetailsDialog = function (dialogType, client) { // popUp window
-  $('#txtX').val(client.X)
+  if(client.Hide === '*') $("#chkHide").prop("checked", true)
+  else                    $("#chkHide").prop("checked", false)
   $('#txtCy').val(client.Cy)
   $('#txtStationName').val(client.StationName)
   $('#txtStreamURL').val(client.StreamURL)
@@ -1137,7 +1115,8 @@ var showDetailsDialog = function (dialogType, client) { // popUp window
     modal: false,
     buttons: {
       OK: function () {
-        client.X = $('#txtX').val()
+        if($('#chkHide').is(':checked')) client.Hide = '*'
+        else                             client.Hide = ''
         client.Cy = $('#txtCy').val()
         client.StationName = $('#txtStationName').val()
         client.StreamURL = $('#txtStreamURL').val()
@@ -1153,7 +1132,7 @@ var showDetailsDialog = function (dialogType, client) { // popUp window
 
 var includeStation = function (client, isNew) {
   $.extend(client, {
-    X: $('#txX').val(),
+    Hide: $('#txHide').val(),
     Cy: $('#txtCy').val(),
     StationName: $('#txtStationName').val(),
     StreamURL: $('#txtStreamURL').val()
@@ -1210,7 +1189,7 @@ function updateStationlist () { // select in tab Radio
   select.options.length = 1
   var j = 1
   for (var i = 0; i < wsData.length; i++) {
-    if (objJSON[i].X !== '*') {
+    if (objJSON[i].Hide !== '*') {
       if (j < 1000) {
         opt = document.createElement('OPTION')
         opt.text = (('000' + j).slice(-3) + ' - ' + objJSON[i].StationName)
@@ -1337,6 +1316,12 @@ function selectstation () { // select a station
 
 function teststreamurl () { // Search: button play - enter a url to play from
   var theUrl = '/stationURL?' + streamurl.value + '&version=' + Math.random()
+  theUrl = theUrl.replace(/%3d/g, '=') // %3d convert to =
+  theUrl = theUrl.replace(/%21/g, '!') //
+  theUrl = theUrl.replace(/%22/g, '"') //
+  theUrl = theUrl.replace(/%23/g, '#') //
+  theUrl = theUrl.replace(/%3f/g, '?') //
+  theUrl = theUrl.replace(/%40/g, '@') //
   var xhr = new XMLHttpRequest()
   xhr.onreadystatechange = function () {
     if (xhr.readyState === XMLHttpRequest.DONE) {}
@@ -1502,8 +1487,8 @@ function getnetworks () { // tab Config: load the connected WiFi network
   <div id="dialog">
     <table>
       <tr>
-        <td> x </td>
-        <td> <input type="text" id="txtX" size="100"/></td>
+        <td> Hide </td>
+        <td> <input type="checkbox" id="chkHide" /></td>
       </tr>
       <tr>
         <td>  Cy  </td>
@@ -1731,7 +1716,10 @@ function getnetworks () { // tab Config: load the connected WiFi network
               onclick="javascript:document.getElementById('file').click();"
               title="Load from PC">load xlsx
       </button>
-      <input id="file" type="file" style="visibility: hidden; width: 0px;"  name="img"
+
+      <!-- <input id="file" type="file" style="visibility: hidden; width: 0px;"  name="img" onchange="loadDataExcel(this.files);"/>    -->
+
+      <input id="file" type="file" accept="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" style="visibility: hidden; width: 0px;"  name="img"
           onchange="loadDataExcel(this.files);"/>
       <br>
       </center>
