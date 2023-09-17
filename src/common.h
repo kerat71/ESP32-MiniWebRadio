@@ -1,5 +1,5 @@
 // created: 10.Feb.2022
-// updated: 20.Aug.2023
+// updated: 17.Sep.2023
 
 #pragma once
 #pragma GCC optimize("Os") // optimize for code size
@@ -7,11 +7,11 @@
 #define _SSID               "mySSID"                        // Your WiFi credentials here
 #define _PW                 "myWiFiPassword"
 #define DECODER             1                               // (0)VS1053 , (1)MAX98357A PCM5102A... (2)AC101 (3)ES8388 (4)WM8978
-#define TFT_CONTROLLER      5                               // (0)ILI9341, (1)HX8347D, (2)ILI9486a, (3)ILI9486b, (4)ILI9488, (5)ST7796, (6)ST7796RPI
+#define TFT_CONTROLLER      2                               // (0)ILI9341, (1)HX8347D, (2)ILI9486a, (3)ILI9486b, (4)ILI9488, (5)ST7796, (6)ST7796RPI
 #define DISPLAY_INVERSION   0                               // (0) off (1) on
 #define TFT_ROTATION        1                               // 1 or 3 (landscape)
-#define TFT_FREQUENCY       80000000                        // 27000000, 40000000, 80000000
-#define TP_VERSION          5                               // (0)ILI9341, (1)ILI9341RPI, (2)HX8347D, (3)ILI9486, (4)ILI9488, (5)ST7796, (3)ST7796RPI
+#define TFT_FREQUENCY       40000000                        // 27000000, 40000000, 80000000
+#define TP_VERSION          3                               // (0)ILI9341, (1)ILI9341RPI, (2)HX8347D, (3)ILI9486, (4)ILI9488, (5)ST7796, (3)ST7796RPI
 #define TP_ROTATION         1                               // 1 or 3 (landscape)
 #define AUDIOTASK_CORE      1                               // 0 or 1
 #define AUDIOTASK_PRIO      2                               // 0 ... 24  Priority of the Task (0...configMAX_PRIORITIES -1)
@@ -166,7 +166,7 @@ void updateSleepTime(boolean noDecrement = false);
 void showVolumeBar();
 void showBrightnessBar();
 void showFooter();
-void display_info(const char *str, int xPos, int yPos, uint16_t color, uint16_t margin_l, uint16_t margin_r, uint16_t winWidth, uint16_t winHeight);
+void display_info(const char *str, int32_t xPos, int32_t yPos, uint16_t color, uint16_t margin_l, uint16_t margin_r, uint16_t winWidth, uint16_t winHeight);
 void showStreamTitle(const char* streamTitle);
 void showVUmeter();
 void updateVUmeter();
@@ -183,6 +183,8 @@ void display_sleeptime(int8_t ud = 0);
 boolean drawImage(const char* path, uint16_t posX, uint16_t posY, uint16_t maxWidth = 0 , uint16_t maxHeigth = 0);
 bool SD_listDir(const char* path);
 bool setAudioFolder(const char* audioDir);
+boolean isAudio(File file);
+boolean isPlaylist(File file);
 File getNextAudioFile();
 bool connectToWiFi();
 void openAccessPoint();
@@ -191,8 +193,8 @@ uint32_t simpleHash(const char* str);
 void trim(char *s);
 bool startsWith (const char* base, const char* str);
 bool endsWith (const char* base, const char* str);
-int indexOf (const char* base, const char* str, int startIndex);
-int lastIndexOf(const char* haystack, const char needle);
+int32_t indexOf (const char* base, const char* str, int32_t startIndex);
+int32_t lastIndexOf(const char* haystack, const char needle);
 boolean strCompare(char* str1, char* str2);
 boolean strCompare(const char* str1, char* str2);
 char* ps_strdup(const char* str);
@@ -215,16 +217,17 @@ void savefile(const char* fileName, uint32_t contentLength);
 String setTone();
 String setI2STone();
 void SD_playFile(const char* path, uint32_t resumeFilePos = 0, bool showFN = true);
+void SD_playFolder(const char* folderPath, bool showFN);
 bool SD_rename(const char* src , const char* dest);
 bool SD_newFolder(const char* folderPathName);
 bool SD_delete(const char* itemPath);
 void processPlaylist(boolean first = false);
-void changeState(int state);
+void changeState(int32_t state);
 void connecttohost(const char* host);
 void connecttoFS(const char* filename, uint32_t resumeFilePos = 0);
 void stopSong();
 void IRAM_ATTR headphoneDetect();
-int DLNA_setCurrentServer(String serverName);
+int32_t DLNA_setCurrentServer(String serverName);
 void DLNA_showServer();
 void DLNA_browseServer(String objectId, uint8_t level);
 void DLNA_getFileItems(String uri);
