@@ -1,5 +1,5 @@
 // first release on 09/2019
-// updated on May 21 2023
+// updated on Aug 17 2023
 
 #include "Arduino.h"
 #include "tft.h"
@@ -302,6 +302,7 @@ void TFT::init() {
     }
     if(_TFTcontroller == ILI9486a || _TFTcontroller == ILI9486b){
         if(tft_info) tft_info("init " ANSI_ESC_CYAN "ILI9486");
+
         //Driving ability Setting
         writeCommand(0x11); // Sleep out, also SW reset
         delay(120);
@@ -583,7 +584,113 @@ void TFT::init() {
 
         writeCommand(ST7796_DISPON);     //Display on
         delay(25);
+    } //===============================================================================
+
+    if(_TFTcontroller == ST7796RPI){
+        if(tft_info) tft_info("init " ANSI_ESC_CYAN "ST7796_RPI");
+        writeCommand(ST7796_SWRESET);
+        delay(120);
+
+        writeCommand(ST7796_SLPOUT);     // Sleep Out
+        delay(120);
+
+        writeCommand(ST7796_CSCON);      // Command Set Control
+        spi_TFT->write16(0xC3);          // Enable extension command 2 partI
+
+        writeCommand(ST7796_CSCON);      // Command Set Control
+        spi_TFT->write16(0x96);          // Enable extension command 2 partII
+
+        writeCommand(ST7796_MADCTL);     // Memory Data Access Control
+        spi_TFT->write16(0x48);
+
+        writeCommand(ST7796_COLMOD);     //Memory Data Access Control MX, MY, RGB mode
+        spi_TFT->write16(0x55);
+
+        writeCommand(ST7796_DIC);        // Display Inversion Control
+        spi_TFT->write16(0x00);
+
+        writeCommand(ST7796_IFMODE);     // RAM control
+        spi_TFT->write16(0x00);
+
+        writeCommand(ST7796_BPC);        // Blanking Porch Control
+        spi_TFT->write16(0x08);
+        spi_TFT->write16(0x08);
+        spi_TFT->write16(0x00);
+        spi_TFT->write16(0x64);
+
+        writeCommand(ST7796_PWR1);       // Power Control 1
+        spi_TFT->write16(0xF0);
+        spi_TFT->write16(0x17);
+
+        writeCommand(ST7796_PWR2);       // Power Control 2
+         spi_TFT->write16(0x14); //
+
+        writeCommand(ST7796_PWR3);       // Power Control 3
+        spi_TFT->write16(0xA7);
+
+        writeCommand(ST7796_VCMPCTL);    // VCOM Control
+        spi_TFT->write16(0x20);
+
+        writeCommand(ST7796_DOCA);       // Display Output Ctrl Adjust
+        spi_TFT->write16(0x40);
+        spi_TFT->write16(0x8A);
+        spi_TFT->write16(0x00);
+        spi_TFT->write16(0x00);
+        spi_TFT->write16(0x29);
+        spi_TFT->write16(0x01);
+        spi_TFT->write16(0xBF);
+        spi_TFT->write16(0x33);
+
+        //--------------------------------ST7789V gamma setting---------------------------------------//
+        writeCommand(ST7796_PGC); // PGAMCTRL(Positive Gamma Control)
+        spi_TFT->write16(0xF0);
+        spi_TFT->write16(0x0B);
+        spi_TFT->write16(0x11);
+        spi_TFT->write16(0x0B);
+        spi_TFT->write16(0x0A);
+        spi_TFT->write16(0x27);
+        spi_TFT->write16(0x3C);
+        spi_TFT->write16(0x55);
+        spi_TFT->write16(0x51);
+        spi_TFT->write16(0x37);
+        spi_TFT->write16(0x15);
+        spi_TFT->write16(0x17);
+        spi_TFT->write16(0x31);
+        spi_TFT->write16(0x35);
+
+        writeCommand(ST7796_NGC);        // NGAMCTRL (Negative Gamma Correction)
+        spi_TFT->write16(0x4E);
+        spi_TFT->write16(0x15);
+        spi_TFT->write16(0x19);
+        spi_TFT->write16(0x0B);
+        spi_TFT->write16(0x09);
+        spi_TFT->write16(0x27);
+        spi_TFT->write16(0x34);
+        spi_TFT->write16(0x32);
+        spi_TFT->write16(0x46);
+        spi_TFT->write16(0x38);
+        spi_TFT->write16(0x14);
+        spi_TFT->write16(0x16);
+        spi_TFT->write16(0x26);
+        spi_TFT->write16(0x2A);
+
+        writeCommand(ST7796_CSCON);      // Command Set Control
+        spi_TFT->write16(0x3C);            // Enable extension command 2 partI
+
+        writeCommand(ST7796_CSCON);      // Command Set Control
+        spi_TFT->write16(0x69);            // Enable extension command 2 partII
+
+        if(_displayInversion == 0){
+            writeCommand(ST7796_INVOFF); // Display Inversion OFF, normal mode
+        }
+        else{
+            writeCommand(ST7796_INVON);  // Display Inversion ON
+        }
+
+        writeCommand(ST7796_DISPON);     //Display on
+        delay(25);
     }
+
     endWrite();
 }
 //----------------------------------------------------------------------------------------------------------------------
@@ -623,7 +730,7 @@ TFT::TFT(uint8_t TFTcontroller, uint8_t dispInv) {
         _width  = 320;
         _rotation=0;
     }
-    if(_TFTcontroller == ST7796){
+    if(_TFTcontroller == ST7796 || _TFTcontroller == ST7796RPI){
         _height = 480;
         _width  = 320;
         _rotation=0;
@@ -657,7 +764,7 @@ void TFT::writeCommand(uint16_t cmd){
     if(_TFTcontroller == ILI9341  || _TFTcontroller == HX8347D ||
        _TFTcontroller == ILI9488  || _TFTcontroller == ST7796) spi_TFT->write(cmd);
 
-    if(_TFTcontroller == ILI9486a || _TFTcontroller == ILI9486b)  spi_TFT->write16(cmd);
+    if(_TFTcontroller == ILI9486a || _TFTcontroller == ILI9486b || _TFTcontroller == ST7796RPI)  spi_TFT->write16(cmd);
     TFT_DC_HIGH();
 }
 // Return the size of the display (per current rotation)
@@ -852,15 +959,43 @@ void TFT::setRotation(uint8_t m) {
         }
         endWrite();
     }
+    if(_TFTcontroller == ST7796RPI){
+        _rotation = m % 4; // can't be higher than 3
+        startWrite();
+        writeCommand(ST7796_MADCTL);
+        switch (_rotation) {
+            case 0:
+                spi_TFT->write16(ST7796_MADCTL_MX | ST7796_MADCTL_BGR);
+                _width  = ST7796_WIDTH;
+                _height = ST7796_HEIGHT;
+                break;
+            case 1:
+                spi_TFT->write16(ST7796_MADCTL_MV | ST7796_MADCTL_BGR);
+                _width  = ST7796_HEIGHT;
+                _height = ST7796_WIDTH;
+                break;
+            case 2:
+                spi_TFT->write16(ST7796_MADCTL_MY | ST7796_MADCTL_BGR);
+                _width  = ST7796_WIDTH;
+                _height = ST7796_HEIGHT;
+                break;
+            case 3:
+                spi_TFT->write16(ST7796_MADCTL_MX | ST7796_MADCTL_MY | ST7796_MADCTL_MV | ST7796_MADCTL_BGR);
+                _width  = ST7796_HEIGHT;
+                _height = ST7796_WIDTH;
+                break;
+        }
+        endWrite();
+    }
 }
 //----------------------------------------------------------------------------------------------------------------------
 
 void TFT::invertDisplay(boolean i) {
     startWrite();
-    if(_TFTcontroller == ILI9341) {writeCommand(i ? ILI9341_INVON : ILI9341_INVOFF);}
+    if(_TFTcontroller == ILI9341)   {writeCommand(i ? ILI9341_INVON : ILI9341_INVOFF);}
     if(_TFTcontroller == ILI9486a || _TFTcontroller == ILI9486b) {writeCommand(i ? ILI9486_INVON : ILI9486_INVOFF);}
-    if(_TFTcontroller == ILI9488) {writeCommand(i ? ILI9488_INVON : ILI9488_INVOFF);}
-    if(_TFTcontroller == ST7796)  {writeCommand(i ? ST7796_INVON  : ST7796_INVOFF);}
+    if(_TFTcontroller == ILI9488)   {writeCommand(i ? ILI9488_INVON : ILI9488_INVOFF);}
+    if(_TFTcontroller == ST7796   || _TFTcontroller == ST7796RPI){writeCommand(i ? ST7796_INVON  : ST7796_INVOFF);}
     endWrite();
 }
 //----------------------------------------------------------------------------------------------------------------------
@@ -950,6 +1085,20 @@ void TFT::setAddrWindow(uint16_t x, uint16_t y, uint16_t w, uint16_t h) {
         spi_TFT->write(h >> 8);
         spi_TFT->write(h & 0xFF);           // YEND
     }
+    if(_TFTcontroller == ST7796RPI){
+        writeCommand(ST7796_CASET);         // Column addr set
+        spi_TFT->write16(x >> 8);
+        spi_TFT->write16(x & 0xFF);         // XSTART
+        w=x+w-1;
+        spi_TFT->write16(w >> 8);
+        spi_TFT->write16(w & 0xFF);         // XEND
+        writeCommand(ST7796_RASET);         // Row addr set
+        spi_TFT->write16(y >> 8);
+        spi_TFT->write16(y & 0xFF);         // YSTART
+        h=y+h-1;
+        spi_TFT->write16(h >> 8);
+        spi_TFT->write16(h & 0xFF);         // YEND
+    }
 }
 //----------------------------------------------------------------------------------------------------------------------
 
@@ -992,6 +1141,14 @@ void TFT::startBitmap(uint16_t x, uint16_t y, uint16_t w, uint16_t h) {
         if(_rotation==3){spi_TFT->write(ST7796_MADCTL_MV | ST7796_MADCTL_MY | ST7796_MADCTL_BGR);}
         writeCommand(ST7796_RAMWR);
     }
+    if(_TFTcontroller == ST7796RPI){
+        writeCommand(ST7796_MADCTL);
+        if(_rotation==0){spi_TFT->write16(ST7796_MADCTL_MX | ST7796_MADCTL_MY | ST7796_MADCTL_ML | ST7796_MADCTL_BGR);}
+        if(_rotation==1){spi_TFT->write16(ST7796_MADCTL_MH | ST7796_MADCTL_MV | ST7796_MADCTL_MX | ST7796_MADCTL_BGR);}
+        if(_rotation==2){spi_TFT->write16(ST7796_MADCTL_MH | ST7796_MADCTL_BGR);}
+        if(_rotation==3){spi_TFT->write16(ST7796_MADCTL_MV | ST7796_MADCTL_MY | ST7796_MADCTL_BGR);}
+        writeCommand(ST7796_RAMWR);
+    }
     endWrite();
 }
 //----------------------------------------------------------------------------------------------------------------------
@@ -1013,7 +1170,7 @@ void TFT::endBitmap() {
     if(_TFTcontroller == ILI9488){
         setRotation(_rotation);
     }
-    if(_TFTcontroller == ST7796){
+    if(_TFTcontroller == ST7796 || _TFTcontroller == ST7796RPI){
         setRotation(_rotation);
     }
 }
@@ -1047,6 +1204,13 @@ void TFT::startJpeg() {
         if(_rotation==1){spi_TFT->write(ST7796_MADCTL_MV | ST7796_MADCTL_BGR);}
         if(_rotation==2){spi_TFT->write(ST7796_MADCTL_MY | ST7796_MADCTL_BGR);}
         if(_rotation==3){spi_TFT->write(ST7796_MADCTL_MV | ST7796_MADCTL_MY | ST7796_MADCTL_MX | ST7796_MADCTL_BGR);}
+    }
+    if(_TFTcontroller == ST7796RPI){
+        writeCommand(ST7796_MADCTL);
+        if(_rotation==0){spi_TFT->write16(ST7796_MADCTL_MH | ST7796_MADCTL_MX | ST7796_MADCTL_BGR);}
+        if(_rotation==1){spi_TFT->write16(ST7796_MADCTL_MV | ST7796_MADCTL_BGR);}
+        if(_rotation==2){spi_TFT->write16(ST7796_MADCTL_MY | ST7796_MADCTL_BGR);}
+        if(_rotation==3){spi_TFT->write16(ST7796_MADCTL_MV | ST7796_MADCTL_MY | ST7796_MADCTL_MX | ST7796_MADCTL_BGR);}
     }
     endWrite();
 }
@@ -1124,13 +1288,14 @@ void TFT::writePixel(int16_t x, int16_t y, uint16_t color) {
     if((x < 0) ||(x >= _width) || (y < 0) || (y >= _height)) return;
     setAddrWindow(x,y,1,1);
     switch(_TFTcontroller){
-        case ILI9341:                               writePixel(color);      break;
-        case HX8347D:  writeCommand(0x22);          writePixel(color);      break;
-        case ILI9486a: writeCommand(ILI9486_RAMWR); writePixel(color);      break;
-        case ILI9486b: writeCommand(ILI9486_RAMWR); writePixel(color);      break;
-        case ILI9488:  writeCommand(ILI9488_RAMWR); write16BitColor(color); break;
-        case ST7796:   writeCommand(ST7796_RAMWR);  write16BitColor(color); break;
-        default: if(tft_info) tft_info("unknown tft controller");           break;
+        case ILI9341:                                writePixel(color);      break;
+        case HX8347D:   writeCommand(0x22);          writePixel(color);      break;
+        case ILI9486a:  writeCommand(ILI9486_RAMWR); writePixel(color);      break;
+        case ILI9486b:  writeCommand(ILI9486_RAMWR); writePixel(color);      break;
+        case ILI9488:   writeCommand(ILI9488_RAMWR); write16BitColor(color); break;
+        case ST7796:    writeCommand(ST7796_RAMWR);  write16BitColor(color); break;
+        case ST7796RPI: writeCommand(ST7796_RAMWR);  writePixel(color);      break;
+        default: if(tft_info) tft_info("unknown tft controller");            break;
     }
 }
 //----------------------------------------------------------------------------------------------------------------------
@@ -1158,9 +1323,9 @@ void TFT::writeFillRect(int16_t x, int16_t y, int16_t w, int16_t h, uint16_t col
     int32_t len = (int32_t)w * h;
     setAddrWindow(x, y, w, h);
     if(_TFTcontroller == HX8347D) writeCommand(0x22);
-    if(_TFTcontroller == ILI9486a || _TFTcontroller == ILI9486b) writeCommand(ILI9486_RAMWR);
+    if(_TFTcontroller == ILI9486a || _TFTcontroller == ILI9486b)  writeCommand(ILI9486_RAMWR);
     if(_TFTcontroller == ILI9488) writeCommand(ILI9488_RAMWR);
-    if(_TFTcontroller == ST7796)  writeCommand(ST7796_RAMWR);
+    if(_TFTcontroller == ST7796   || _TFTcontroller == ST7796RPI) writeCommand(ST7796_RAMWR);
     writeColor(color, len);
 }
 //----------------------------------------------------------------------------------------------------------------------
@@ -1612,7 +1777,7 @@ bool TFT::setCursor(uint16_t x, uint16_t y) {
         spi_TFT->write(y & 0xFF);
         writeCommand(ILI9486_RAMWR); //Row Start
     }
-    if(_TFTcontroller == ST7796){
+    if(_TFTcontroller == ST7796 || _TFTcontroller == ST7796RPI){
         writeCommand(0x2A);
         spi_TFT->write(x >> 8);
         spi_TFT->write(x & 0xFF);
@@ -1628,24 +1793,26 @@ bool TFT::setCursor(uint16_t x, uint16_t y) {
 }
 //----------------------------------------------------------------------------------------------------------------------
 
-size_t TFT::writeText(const uint8_t *str, int16_t maxHeight) {    // a pointer to string
+size_t TFT::writeText(const uint8_t *str, int16_t maxWidth, int16_t maxHeight, boolean noWrap) {  // a pointer to string
 
     int16_t sHeight = height();
     int16_t sWidth =  width();
 
-    uint16_t len=0;
+    uint16_t wordLength = 0;
     uint16_t ch_count = 0;
-    while(str[len]!=0)len++;  // determine length of text
+    while(str[wordLength] !=0 ) wordLength++;  // determine length of text
 
-    static int16_t xC=64;
-    static int16_t tmp_curX=0;
-    static int16_t tmp_curY=0;
+    static int16_t xC = 64;
+    static int16_t tmp_curX = 0;
+    static int16_t tmp_curY = 0;
 
     if(_f_curPos==true){tmp_curX=_curX; tmp_curY=_curY; _f_curPos=false;} //new CursorValues?
 
     int16_t mHeight = maxHeight + _curY;
     if(maxHeight < 1) mHeight = 1000; // unused, set it larger than display size
 
+    int16_t mWidth  = maxWidth + _curX;
+    if(maxWidth < 1)  mWidth  = 1000; // unused, set it larger than display size
 
     boolean  f_wrap=false;
     uint16_t color=_textcolor;
@@ -1660,16 +1827,16 @@ size_t TFT::writeText(const uint8_t *str, int16_t maxHeight) {    // a pointer t
     uint16_t font_height = _font[6];
     startWrite();
 
-    while(i != len) {  //until string ends
+    while(i != wordLength) {  //until string ends
         int strw=0;
         //------------------------------------------------------------------  word wrap
         a=i+1 ;
-        if(str[i] == 32) { // space
+        if(str[i] == 32 && !noWrap) { // space
             strw=font_height/4; // erstes Leerzeichen
             uint16_t fi=8;
             fi=fi + (str[i] - 32) * 4;
             strw=strw + _font[fi] +1;
-            while((str[a] != 32) && (a < len)) {
+            while((str[a] != 32) && (a < wordLength)) {
                 fi=8;
                 if((_f_utf8)&&(str[a]>=0xC2)){ //next char is UTF-8
                     uint16_t ch=str[a]; ch<<=8; ch+=str[a+1];
@@ -1689,10 +1856,31 @@ size_t TFT::writeText(const uint8_t *str, int16_t maxHeight) {    // a pointer t
             }
             if(_textorientation == 0) {
                 if((Xpos + strw) >= sWidth) f_wrap = true;
+                if((Xpos + strw) >= mWidth) f_wrap = true;
             }
             else{
                 if((Ypos+strw) >= sHeight) f_wrap=true;
             }
+        }
+        if(str[i] == '\033' && (i + 4) < wordLength){ // ANSI ESC?
+            if(str[i + 1] == '[' && str[i + 2] == '3'){// ANSI ESCAPE COLOR SEQUENCE found
+                if(str[i + 4] == 'm'){
+                    switch (str[i + 3]) {
+                        case '0':   color = TFT_BLACK;         break; // ANSI_ESC_BLACK
+                        case '1':   color = TFT_RED;           break; // ANSI_ESC_RED
+                        case '2':   color = TFT_GREEN;         break; // ANSI_ESC_GREEN
+                        case '3':   color = TFT_YELLOW;        break; // ANSI_ESC_YELLOW
+                        case '4':   color = TFT_BLUE;          break; // ANSI_ESC_BLUE
+                        case '5':   color = TFT_MAGENTA;       break; // ANSI_ESC_MAGENTA
+                        case '6':   color = TFT_CYAN;          break; // ANSI_ESC_CYAN
+                        case '7':   color = TFT_WHITE;         break; // ANSI_ESC_WHITE
+                        default: log_w("unknown ANSI ESCAPE COLOR SEQUENCE "); break;
+                    }
+                    i += 5;
+                }
+                else log_w("ANSI ESCAPE COLOR SEQUENCE not impl");
+            }
+            continue;
         }
         //------------------------------------------------------------------ word wrap end
 
@@ -1719,7 +1907,15 @@ size_t TFT::writeText(const uint8_t *str, int16_t maxHeight) {    // a pointer t
             uint16_t space;
             if(font_char==0) space=font_height/4; else space=0; //correct spacewidth is 1
             if(_textorientation==0) {
-                if((Xpos+char_width+space)>=sWidth){Xpos=_curX; Ypos+=font_height; Xpos0=Xpos; Ypos0=Ypos;}
+                if(noWrap){
+                    if((Xpos + char_width + space) >= sWidth){Xpos=_curX; Ypos+=font_height; Xpos0=Xpos; Ypos0=Ypos; tmp_curY=Ypos; endWrite(); return ch_count;}
+                    if((Xpos + char_width + space) >= mWidth){Xpos=_curX; Ypos+=font_height; Xpos0=Xpos; Ypos0=Ypos; tmp_curY=Ypos; endWrite(); return ch_count;}
+                }
+                else{ // wrap is enabled
+                    if((Xpos+char_width+space)>=sWidth){Xpos=_curX; Ypos+=font_height; Xpos0=Xpos; Ypos0=Ypos;}
+                    if((Xpos+char_width+space)>=mWidth){Xpos=_curX; Ypos+=font_height; Xpos0=Xpos; Ypos0=Ypos;}
+
+                }
                 if((Ypos+font_height)>=sHeight){tmp_curX=Xpos; tmp_curY=Ypos; endWrite(); return ch_count;}
                 if((Ypos+font_height)>=mHeight){tmp_curX=Xpos; tmp_curY=Ypos; endWrite(); return ch_count;}
             }
@@ -2954,9 +3150,9 @@ void TFT::renderJPEG(int xpos, int ypos, uint16_t maxWidth, uint16_t maxHeight) 
                 setAddrWindow(mcu_x, mcu_y, win_w , win_h);
                 if(_TFTcontroller == ILI9341) writeCommand(ILI9341_RAMWR); //ILI9341
                 if(_TFTcontroller == HX8347D) writeCommand(0x22);
-                if(_TFTcontroller == ILI9486a || _TFTcontroller == ILI9486b) writeCommand(ILI9486_RAMWR);
+                if(_TFTcontroller == ILI9486a || _TFTcontroller == ILI9486b)  writeCommand(ILI9486_RAMWR);
                 if(_TFTcontroller == ILI9488) writeCommand(ILI9488_RAMWR);
-                if(_TFTcontroller == ST7796)  writeCommand(ST7796_RAMWR);
+                if(_TFTcontroller == ST7796   || _TFTcontroller == ST7796RPI) writeCommand(ST7796_RAMWR);
                 // push all the image block pixels to the screen
                 while (mcu_pixels--) writePixel(*pImg++); // Send to TFT 16 bits at a time
             endWrite();
@@ -4530,19 +4726,39 @@ uint16_t TP::TP_Send(uint8_t set_val) {
 //----------------------------------------------------------------------------------------------------------------------
 
 void TP::loop() {
+    static uint16_t x1 = 0, y1 = 0;
+    static uint16_t x2 = 0, y2 = 0;
     if (!digitalRead(TP_IRQ)) {
+        if(read_TP(x, y)) { x1 = x; y1 = y;}
         if (f_loop) {
-            read_TP(x, y);  // skip first measurement
             if (read_TP(x, y)) {
                 f_loop = false;
                 // log_i("tp_pressed x=%d, y=%d", x, y);
                 if (tp_pressed) tp_pressed(x, y);
+                x2 = x; y2 = y;
+                m_pressingTime = millis();
+                m_f_isPressing = true;
+            }
+        }
+        else {
+            if(m_f_isPressing){
+                if(m_pressingTime + 2500 < millis()){
+                    m_f_isPressing = false;
+                    if(tp_long_pressed) tp_long_pressed(x2, y2);
+                    m_f_longPressed = true;
+                }
             }
         }
     } else {
         if (f_loop == false) {
             // log_i("tp_released");
-            if (tp_released) tp_released();
+            if(m_f_longPressed){
+                m_f_longPressed = false;
+                if (tp_long_released) tp_long_released();
+            }
+            else{
+                if (tp_released) tp_released(x1, y1);
+            }
             f_loop = true;
         }
     }

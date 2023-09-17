@@ -2,7 +2,7 @@
  * websrv.h
  *
  *  Created on: 09.07.2017
- *  updated on: 11.04.2022
+ *  updated on: 06.07.2023
  *      Author: Wolle
  */
 
@@ -53,21 +53,20 @@ protected:
     boolean handlehttp();
     boolean handleWS();
     void    parseWsMessage(uint32_t len);
-    uint8_t inbyte();
     String  URLdecode(String str);
     String  UTF8toASCII(String str);
     String  responseCodeToString(int code);
 
 
 public:
-    enum { HTTP_NONE = 0, HTTP_GET = 1, HTTP_PUT = 2 };
+    enum { HTTP_NONE = 0, HTTP_GET = 1, HTTP_POST = 2, HTTP_PUT = 3 };
     enum { Continuation_Frame = 0x00, Text_Frame = 0x01, Binary_Frame = 0x02, Connection_Close_Frame = 0x08,
            Ping_Frame = 0x09, Pong_Frame = 0x0A };
     WebSrv(String Name="WebSrv library", String Version="1.0");
     void begin(uint16_t http_port = 80, uint16_t websocket_port = 81);
     void stop();
-    boolean loop();
-    void show(const char* pagename, int16_t len=-1);
+    void loop();
+    void show(const char* pagename, const char* MIMEType, int16_t len=-1);
     void show_not_found();
     boolean streamfile(fs::FS &fs,const char* path);
     boolean send(String msg, uint8_t opcode = Text_Frame);
@@ -76,8 +75,16 @@ public:
     void    sendPong();
     boolean uploadfile(fs::FS &fs,const char* path, uint32_t contentLength);
     boolean uploadB64image(fs::FS &fs,const char* path, uint32_t contentLength);
-    void reply(const String &response, boolean header=true);
-    const char* ASCIItoUTF8(const char* str);
+    void reply(const String response, const char* MIMEType, boolean header=true);
+    void sendStatus(uint16_t HTTPstatusCode);
+
+
+    const char JSON[17]  = "application/json";
+    const char TEXT[10]  = "text/html";
+    const char JS[23]    = "application/javascript";
+    const char BMP[15]   = "image/bmp";
+    const char JPG[15]   = "image/jpeg";
+    const char PNG[15]   = "image/png";
 
 private:
     const int B64index[123] ={
@@ -90,6 +97,29 @@ private:
         0,  26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40,
         41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51
     };
+
+
+    int indexOf (const char* base, char ch, int startIndex = 0) {
+    //fb
+        const char *p = base;
+        for (; startIndex > 0; startIndex--)
+            if (*p++ == '\0') return -1;
+        char *pos = strchr(p, ch);
+        if (pos == nullptr) return -1;
+        return pos - base;
+    }
+
+    int lastIndexOf(const char* haystack, const char needle) {
+    //fb
+        const char *p = strrchr(haystack, needle);
+        return (p ? p - haystack : -1);
+    }
+//--------------------------------------------------------------------------------------------------------------
+
+
+
+
+
 };
 
 

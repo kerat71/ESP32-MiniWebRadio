@@ -1,5 +1,5 @@
 // created: 10.02.2022
-// updated: 28.05.2022
+// updated: 26.06.2022
 
 #include "common.h"
 #include "SPIFFS.h"
@@ -27,7 +27,7 @@ extern SemaphoreHandle_t  mutex_rtc;
 
 enum : uint8_t { SET_VOLUME, GET_VOLUME, CONNECTTOHOST, CONNECTTOFS, STOPSONG, SETTONE, INBUFF_FILLED, INBUFF_FREE,
                  ISRUNNING, HIGHWATERMARK, GET_BITRATE, GET_CODEC, PAUSERESUME, CONNECTION_TIMEOUT, GET_FILESIZE,
-                 GET_FILEPOSITION};
+                 GET_FILEPOSITION, GET_VULEVEL};
 
 struct audioMessage{
     uint8_t     cmd;
@@ -162,6 +162,11 @@ void audioTask(void *parameter) {
                 audioTxTaskMessage.ret = vs1053.getFilePos();
                 xQueueSend(audioGetQueue, &audioTxTaskMessage, portMAX_DELAY);
             }
+            else if(audioRxTaskMessage.cmd == GET_VULEVEL){
+                audioTxTaskMessage.cmd = GET_VULEVEL;
+                audioTxTaskMessage.ret = vs1053.getVUlevel();
+                xQueueSend(audioGetQueue, &audioTxTaskMessage, portMAX_DELAY);
+            }
             else{
                 SerialPrintfln(ANSI_ESC_RED "Error: unknown audioTaskMessage");
             }
@@ -174,7 +179,7 @@ void audioInit() {
     xTaskCreatePinnedToCore(
         audioTask,             /* Function to implement the task */
         "audioplay",           /* Name of the task */
-        8000,                  /* Stack size in words */
+        7500,                  /* Stack size in words */
         NULL,                  /* Task input parameter */
         AUDIOTASK_PRIO,        /* Priority of the task */
         NULL,                  /* Task handle. */
@@ -190,7 +195,7 @@ audioMessage transmitReceive(audioMessage msg){
     xQueueSend(audioSetQueue, &msg, portMAX_DELAY);
     if(xQueueReceive(audioGetQueue, &audioRxMessage, portMAX_DELAY) == pdPASS){
         if(msg.cmd != audioRxMessage.cmd){
-            SerialPrintfln(ANSI_ESC_RED "Error: wrong reply from message queue");
+            SerialPrintfln(ANSI_ESC_RED "Error: wrong reply from message queue await %i but received %i", msg.cmd, audioRxMessage.cmd);
         }
     }
     return audioRxMessage;
@@ -286,6 +291,7 @@ boolean audioPauseResume(){
     return RX.ret;
 }
 void audioConnectionTimeout(uint32_t timeout_ms, uint32_t timeout_ms_ssl){
+    audioTxMessage.cmd = CONNECTION_TIMEOUT;
     audioTxMessage.value1 = timeout_ms;
     audioTxMessage.value2 = timeout_ms_ssl;
     audioMessage RX = transmitReceive(audioTxMessage);
@@ -304,6 +310,12 @@ uint32_t audioGetFilePosition(){
     return RX.ret;
 }
 
+uint16_t audioGetVUlevel(){
+    audioTxMessage.cmd = GET_VULEVEL;
+    audioMessage RX = transmitReceive(audioTxMessage);
+    return RX.ret;
+}
+
 #endif // DECODER == 0
 
 /***********************************************************************************************************************
@@ -314,7 +326,7 @@ uint32_t audioGetFilePosition(){
 
 enum : uint8_t { SET_VOLUME, GET_VOLUME, GET_BITRATE, CONNECTTOHOST, CONNECTTOFS, STOPSONG, SETTONE, INBUFF_FILLED,
                  INBUFF_FREE, ISRUNNING, HIGHWATERMARK, GET_CODEC, PAUSERESUME, CONNECTION_TIMEOUT, GET_FILESIZE,
-                 GET_FILEPOSITION};
+                 GET_FILEPOSITION, GET_VULEVEL};
 
 struct audioMessage{
     uint8_t     cmd;
@@ -442,6 +454,11 @@ void audioTask(void *parameter) {
                 audioTxTaskMessage.ret = audio.getFilePos();
                 xQueueSend(audioGetQueue, &audioTxTaskMessage, portMAX_DELAY);
             }
+            else if(audioRxTaskMessage.cmd == GET_VULEVEL){
+                audioTxTaskMessage.cmd = GET_VULEVEL;
+                audioTxTaskMessage.ret = audio.getVUlevel();
+                xQueueSend(audioGetQueue, &audioTxTaskMessage, portMAX_DELAY);
+            }
             else{
                 SerialPrintfln(ANSI_ESC_RED "Error: unknown audioTaskMessage");
             }
@@ -454,7 +471,7 @@ void audioInit() {
     xTaskCreatePinnedToCore(
         audioTask,              /* Function to implement the task */
         "audioplay",            /* Name of the task */
-        8000,                   /* Stack size in words */
+        7500,                   /* Stack size in words */
         NULL,                   /* Task input parameter */
         AUDIOTASK_PRIO,         /* Priority of the task */
         NULL,                   /* Task handle. */
@@ -566,6 +583,7 @@ boolean audioPauseResume(){
     return RX.ret;
 }
 void audioConnectionTimeout(uint32_t timeout_ms, uint32_t timeout_ms_ssl){
+    audioTxMessage.cmd = CONNECTION_TIMEOUT;
     audioTxMessage.value1 = timeout_ms;
     audioTxMessage.value2 = timeout_ms_ssl;
     audioMessage RX = transmitReceive(audioTxMessage);
@@ -580,6 +598,12 @@ uint32_t audioGetFileSize(){
 
 uint32_t audioGetFilePosition(){
     audioTxMessage.cmd = GET_FILEPOSITION;
+    audioMessage RX = transmitReceive(audioTxMessage);
+    return RX.ret;
+}
+
+uint16_t audioGetVUlevel(){
+    audioTxMessage.cmd = GET_VULEVEL;
     audioMessage RX = transmitReceive(audioTxMessage);
     return RX.ret;
 }

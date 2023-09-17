@@ -3,7 +3,7 @@
  *
  *  Created on: 04.08.2017
  *      Author: Wolle
- *  Updated on: 11.02.2022
+ *  Updated on: 07.07.2023
  * 
  */
 
@@ -251,6 +251,7 @@ RTIME::~RTIME(){
 	sntp_stop();
 }
 boolean RTIME::begin(String TimeZone){
+    if(TimeZone.length() == 0) return false;
     RTIME_TZ=TimeZone;
     if (RTIME_info) RTIME_info("Initializing SNTP");
     sntp_setoperatingmode(SNTP_OPMODE_POLL);
@@ -258,6 +259,10 @@ boolean RTIME::begin(String TimeZone){
     sntp_setservername(0, sbuf);
     sntp_init();
     return obtain_time();
+}
+
+void RTIME::stop(){
+    sntp_stop();
 }
 
 boolean RTIME::obtain_time(){
@@ -317,6 +322,15 @@ const char* RTIME::gettime_xs(){  // hh:mm
     time(&now);
     localtime_r(&now, &timeinfo);
     sprintf(strftime_buf,"%02d:%02d",  timeinfo.tm_hour, timeinfo.tm_min);
+    return strftime_buf;
+}
+
+const char* RTIME::gettime_xs_12h(){  // hh:mm
+    time_t rawtime;
+    struct tm * timeinfo;
+    time (&rawtime);
+    timeinfo = localtime (&rawtime);
+    strftime(strftime_buf, 64, "%I:%M %p",  timeinfo);
     return strftime_buf;
 }
 

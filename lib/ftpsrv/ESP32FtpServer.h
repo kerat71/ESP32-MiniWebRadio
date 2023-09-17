@@ -20,6 +20,7 @@
  */
 //  2017: modified by @robo8080
 //  2019: modified by @HenrikSte
+//  2023: modified by schreibfaul1
 
 /*******************************************************************************
  **                                                                            **
@@ -34,21 +35,14 @@
 #define FTP_SERVERESP_H
 
 
-//#define SDFATFS_USED // activate to use SdFat
-
 #include "Arduino.h"
 #include "SPI.h"
 #include <WiFi.h>
 #include <WiFiClient.h>
 
-#ifdef SDFATFS_USED
-#include "SD_Libs/SD_Libs.h"
-#else
 #include "SD.h"
 #include "SD_MMC.h"
 #include "FS.h"
-#endif
-
 
 #define FTP_SERVER_VERSION "FTP-2020-12-12"
 
@@ -74,8 +68,8 @@ public:
     ~FtpServer();
     void    begin(String uname, String pword);
     void    begin(fs::FS &fs, String uname, String pword);
-    int     handleFTP();
     uint8_t isConnected();
+    int  handleFTP();
 
 private:
     void iniVariables();

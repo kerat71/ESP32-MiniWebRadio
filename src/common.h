@@ -1,25 +1,24 @@
 // created: 10.Feb.2022
-// updated: 24.May.2023
+// updated: 20.Aug.2023
 
 #pragma once
 #pragma GCC optimize("Os") // optimize for code size
 
-#define _SSID               "kerat"                        // Your WiFi credentials here
-#define _PW                 "7103280468"
-#define TZName              "CET-1CEST,M3.5.0,M10.5.0/3"    // Timezone (more TZNames in "rtime.cpp")
+#define _SSID               "mySSID"                        // Your WiFi credentials here
+#define _PW                 "myWiFiPassword"
 #define DECODER             1                               // (0)VS1053 , (1)MAX98357A PCM5102A... (2)AC101 (3)ES8388 (4)WM8978
-#define TFT_CONTROLLER      3                               // (0)ILI9341, (1)HX8347D, (2)ILI9486a, (3)ILI9486b, (4)ILI9488
+#define TFT_CONTROLLER      5                               // (0)ILI9341, (1)HX8347D, (2)ILI9486a, (3)ILI9486b, (4)ILI9488, (5)ST7796, (6)ST7796RPI
 #define DISPLAY_INVERSION   0                               // (0) off (1) on
-#define TFT_FREQUENCY       40000000                        // 27000000, 40000000, 80000000
 #define TFT_ROTATION        1                               // 1 or 3 (landscape)
-#define TP_VERSION          3                               // (0)ILI9341, (1)ILI9341RPI, (2)HX8347D, (3)ILI9486, (4)ILI9488, (5)ST7796
+#define TFT_FREQUENCY       80000000                        // 27000000, 40000000, 80000000
+#define TP_VERSION          5                               // (0)ILI9341, (1)ILI9341RPI, (2)HX8347D, (3)ILI9486, (4)ILI9488, (5)ST7796, (3)ST7796RPI
 #define TP_ROTATION         1                               // 1 or 3 (landscape)
 #define AUDIOTASK_CORE      1                               // 0 or 1
 #define AUDIOTASK_PRIO      2                               // 0 ... 24  Priority of the Task (0...configMAX_PRIORITIES -1)
-#define SDMMC_FREQUENCY     10000000                        // 40000000, 2000000, 10000000, not every SD Card will run at 40MHz
+#define SDMMC_FREQUENCY     80000000                        // 40000000, 2000000, 10000000, not every SD Card will run at 40MHz
 #define FTP_USERNAME        "esp32"                         // user and pw in FTP Client
 #define FTP_PASSWORD        "esp32"
-#define CONN_TIMEOUT        250                             // unencrypted connection timeout in ms (http://...)
+#define CONN_TIMEOUT        500                             // unencrypted connection timeout in ms (http://...)
 #define CONN_TIMEOUT_SSL    2000                            // encrypted connection timeout in ms (https://...)
 
 /**********************************************************************************************************************/
@@ -31,9 +30,12 @@
 #include <SD_MMC.h>
 #include <FS.h>
 #include <Wire.h>
+#include <ESPmDNS.h>
 #include <WiFiClient.h>
 #include <WiFiMulti.h>
+#include <vector>
 #include "index.h"
+#include "index.js.h"
 #include "accesspoint.h"
 #include "websrv.h"
 #include "rtime.h"
@@ -91,7 +93,7 @@
         #define SD_MMC_D0     11
         #define SD_MMC_CLK    13
         #define SD_MMC_CMD    14
-        #define IR_PIN        33
+        #define IR_PIN         4
         #define TFT_MOSI      18  // TFT and TP (FSPI)
         #define TFT_MISO       2  // TFT and TP (FSPI)
         #define TFT_SCK       17  // TFT and TP (FSPI)
@@ -142,31 +144,46 @@
 // //prototypes (main.cpp)
 boolean defaultsettings();
 boolean saveStationsToNVS();
+boolean saveDefaultIRbuttonsToNVS();
+void saveIRbuttonsToNVS();
+void loadIRbuttonsFromNVS();
+void updateSettings();
 void urldecode(char *str);
+String SD_dirContent(String path);
 void setTFTbrightness(uint8_t duty);
 void showHeadlineVolume();
 void showHeadlineTime(bool complete = true);
 void showHeadlineItem(uint8_t idx);
 void showFooterIPaddr();
 void showFooterStaNr();
-void showFooterRSSI();
+void showFooterRSSI(boolean show = false);
+void fall_asleep();
+void wake_up();
+void setRTC(const char* TZString);
+void vector_clear_and_shrink(vector<char*>&vec);
+void dlna_items_vector_clear_ans_shrink();
 void updateSleepTime(boolean noDecrement = false);
 void showVolumeBar();
 void showBrightnessBar();
 void showFooter();
-void display_info(const char *str, int xPos, int yPos, uint16_t color, uint16_t indent, uint16_t winHeight);
+void display_info(const char *str, int xPos, int yPos, uint16_t color, uint16_t margin_l, uint16_t margin_r, uint16_t winWidth, uint16_t winHeight);
 void showStreamTitle(const char* streamTitle);
+void showVUmeter();
+void updateVUmeter();
 void showLogoAndStationName();
-void showFileLogo();
+void showStationName(String sn);
+void showStationLogo(String ln);
+void showFileLogo(uint8_t state);
 void showFileName(const char* fname);
+void showStationsList(uint16_t staListNr);
 void display_time(boolean showall = false);
 void display_alarmDays(uint8_t ad, boolean showall=false);
 void display_alarmtime(int8_t xy = 0, int8_t ud = 0, boolean showall = false);
 void display_sleeptime(int8_t ud = 0);
 boolean drawImage(const char* path, uint16_t posX, uint16_t posY, uint16_t maxWidth = 0 , uint16_t maxHeigth = 0);
+bool SD_listDir(const char* path);
 bool setAudioFolder(const char* audioDir);
-const char* listAudioFile();
-bool sendAudioList2Web(const char* audioDir);
+File getNextAudioFile();
 bool connectToWiFi();
 void openAccessPoint();
 const char* byte_to_binary(int8_t x);
@@ -175,9 +192,12 @@ void trim(char *s);
 bool startsWith (const char* base, const char* str);
 bool endsWith (const char* base, const char* str);
 int indexOf (const char* base, const char* str, int startIndex);
+int lastIndexOf(const char* haystack, const char needle);
 boolean strCompare(char* str1, char* str2);
 boolean strCompare(const char* str1, char* str2);
+char* ps_strdup(const char* str);
 int16_t strlenUTF8(const char* str);
+int32_t map_l(int32_t x, int32_t in_min, int32_t in_max, int32_t out_min, int32_t out_max);
 void SerialPrintflnCut(const char* item, const char* color, const char* str);
 const char* scaleImage(const char* path);
 void setVolume(uint8_t vol);
@@ -194,7 +214,10 @@ void changeBtn_released(uint8_t btnNr);
 void savefile(const char* fileName, uint32_t contentLength);
 String setTone();
 String setI2STone();
-void audiotrack(const char* fileName, uint32_t resumeFilePos = 0, bool showFN = true);
+void SD_playFile(const char* path, uint32_t resumeFilePos = 0, bool showFN = true);
+bool SD_rename(const char* src , const char* dest);
+bool SD_newFolder(const char* folderPathName);
+bool SD_delete(const char* itemPath);
 void processPlaylist(boolean first = false);
 void changeState(int state);
 void connecttohost(const char* host);
@@ -206,6 +229,7 @@ void DLNA_showServer();
 void DLNA_browseServer(String objectId, uint8_t level);
 void DLNA_getFileItems(String uri);
 void DLNA_showContent(String objectId, uint8_t level);
+void showDlnaItemsList(uint8_t level, uint16_t itemNr);
 
 //prototypes (audiotask.cpp)
 void audioInit();
@@ -225,3 +249,5 @@ boolean audioPauseResume();
 void audioConnectionTimeout(uint32_t timeout_ms, uint32_t timeout_ms_ssl);
 uint32_t audioGetFileSize();
 uint32_t audioGetFilePosition();
+uint16_t audioGetVUlevel();
+

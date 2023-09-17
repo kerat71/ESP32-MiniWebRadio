@@ -1,5 +1,5 @@
 // first release on 09/2019
-// updated on May 31 2022
+// updated on Aug 17 2023
 
 
 #pragma once
@@ -26,7 +26,9 @@ using namespace std;
 
 extern __attribute__((weak)) void tft_info(const char*);
 extern __attribute__((weak)) void tp_pressed(uint16_t x, uint16_t y);
-extern __attribute__((weak)) void tp_released();
+extern __attribute__((weak)) void tp_long_pressed(uint16_t x, uint16_t y);
+extern __attribute__((weak)) void tp_released(uint16_t x, uint16_t y);
+extern __attribute__((weak)) void tp_long_released();
 
 #define ANSI_ESC_BLACK      "\033[30m"
 #define ANSI_ESC_RED        "\033[31m"
@@ -58,12 +60,14 @@ extern __attribute__((weak)) void tp_released();
 #define TFT_CHOCOLATE       0xD343 // 210, 105,  30
 #define TFT_CORNSILK        0xFFDB // 255, 248, 220
 #define TFT_CYAN            0x07FF //   0, 255, 255
-#define TFT_DARKGREEN       0x0320 //   0, 100,   0
+#define TFT_DARKGREEN       0x0320 //   0, 101,   0
 #define TFT_DARKGREY        0xAD55 // 169, 169, 169
 #define TFT_DARKCYAN        0x0451 //   0, 139, 139
+#define TFT_DARKRED         0x5800 //  90,   0,   0
+#define TFT_DARKYELLOW      0x6B60 // 110, 110,   0
 #define TFT_DEEPSKYBLUE     0x05FF //   0, 191, 255
 #define TFT_GRAY            0x8410 // 128, 128, 128
-#define TFT_GREEN           0x0400 //   0, 128,   0
+#define TFT_GREEN           0x07E0 //   0, 255,   0
 #define TFT_GREENYELLOW     0xAFE5 // 173, 255,  47
 #define TFT_GOLD            0xFEA0 // 255, 215,   0
 #define TFT_HOTPINK         0xFB56 // 255, 105, 180
@@ -97,7 +101,7 @@ class TFT : public Print {
     public:
         TFT(uint8_t TFT_id = 0, uint8_t dispInv = 0);
         virtual ~TFT(){}
-        void begin(uint8_t CS, uint8_t DC, uint8_t spi, uint8_t mosi, uint8_t miso, uint8_t sclk);
+        void      begin(uint8_t CS, uint8_t DC, uint8_t spi, uint8_t mosi, uint8_t miso, uint8_t sclk);
         void      setFrequency(uint32_t f);
         void      setRotation(uint8_t r);
         bool      setCursor(uint16_t x, uint16_t y);
@@ -125,7 +129,7 @@ virtual size_t    write(const uint8_t *buffer, size_t size);
         boolean   drawGifFile(fs::FS &fs, const char * path, uint16_t x, uint16_t y, uint8_t repeat);
         boolean   drawJpgFile(fs::FS &fs, const char * path, uint16_t x=0, uint16_t y=0, uint16_t maxWidth=0, uint16_t maxHeight=0, uint16_t offX=0, uint16_t offY=0);
         uint16_t  color565(uint8_t r, uint8_t g, uint8_t b);
-        size_t    writeText(const uint8_t *str, int16_t maxHeight = -1);
+        size_t    writeText(const uint8_t *str, int16_t maxWidth = -1, int16_t maxHeight = -1, boolean noWrap = false);
 
         inline void setTextColor(uint16_t  color){_textcolor=color;}
         inline void setFont(const uint16_t* font){_font=font;
@@ -199,7 +203,7 @@ virtual size_t    write(const uint8_t *buffer, size_t size);
 
     private:
 
-        enum Ctrl {ILI9341 = 0, HX8347D = 1, ILI9486a = 2, ILI9486b = 3, ILI9488 = 4, ST7796 = 5};
+        enum Ctrl {ILI9341 = 0, HX8347D = 1, ILI9486a = 2, ILI9486b = 3, ILI9488 = 4, ST7796 = 5, ST7796RPI = 6};
         uint8_t _TFTcontroller = ILI9341;
 
         SPISettings     TFT_SPI;                     // SPI settings for this slave
@@ -708,7 +712,11 @@ class TP : public TFT {
         uint16_t Ymin=220;
         uint8_t  TP_vers = 0;
 
-    protected:
+        uint32_t m_pressingTime = 0;
+        boolean  m_f_isPressing = false;
+        boolean  m_f_longPressed = false;
+
+    public:
         uint16_t TP_Send(uint8_t set_val);
         bool read_TP(uint16_t& x, uint16_t& y);
 };
